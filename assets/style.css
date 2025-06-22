@@ -1,0 +1,50 @@
+body {
+    background-color: #f4f7f6;
+}
+
+.navbar-brand {
+    font-weight: 600;
+}
+
+.card {
+    border-radius: 0.75rem;
+    border: none;
+}
+
+.card-header {
+    border-top-left-radius: 0.75rem;
+    border-top-right-radius: 0.75rem;
+}
+
+.opioid-row {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    transition: box-shadow 0.2s ease-in-out;
+}
+
+.opioid-row:hover {
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
+}
+
+#resultsSection .card-header {
+    font-weight: 600;
+}
+
+#recommendedDose {
+    font-weight: 700;
+    color: #198754;
+}
+
+.table th {
+    font-weight: 600;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.footer {
+    padding: 2rem 0;
+    background-color: #e9ecef;
+    color: #6c757d;
+}
