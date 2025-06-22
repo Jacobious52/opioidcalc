@@ -234,8 +234,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }],
                 target_opioid: rowEl.querySelector('.target-opioid').value,
                 target_route: rowEl.querySelector('.target-route').value,
-                is_switching: false,
-                patient_factor: PatientFactor.NONE
+                is_switching: rowEl.querySelector('.switching-select').value === 'true',
+                patient_factor: rowEl.querySelector('.patient-factor-select').value
             };
 
             if (isNaN(request.current_opioids[0].dose) || request.current_opioids[0].dose <= 0) {
@@ -266,11 +266,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const frequencyDatalist = rowEl.querySelector('datalist');
         const targetDrugSelect = rowEl.querySelector('.target-opioid');
         const targetRouteSelect = rowEl.querySelector('.target-route');
+        const patientFactorSelect = rowEl.querySelector('.patient-factor-select');
 
         populateSelect(drugSelect, AVAILABLE_OPIOIDS, OpioidType.MORPHINE);
         populateSelect(routeSelect, AVAILABLE_ROUTES, Route.ORAL);
         populateSelect(targetDrugSelect, AVAILABLE_OPIOIDS, OpioidType.MORPHINE);
         populateSelect(targetRouteSelect, AVAILABLE_ROUTES, Route.ORAL);
+        populateSelect(patientFactorSelect, AVAILABLE_PATIENT_FACTORS, PatientFactor.NONE);
         frequencyDatalist.innerHTML = COMMON_FREQUENCIES.map(f => `<option value="${f}"></option>`).join('');
 
         rowEl.querySelector('.remove-opioid-btn').addEventListener('click', (e) => {
