@@ -28,4 +28,4 @@ uv run pytest
 
 ## Important Note on Conversion Factors
 
-The equianalgesic conversion factors used in this application are hard-coded in `app/services/conversion_service.py`. These are based on standard clinical guidelines, but **it is crucial to review and verify them against your institution's protocols or the most current pharmacological resources.** 
+The equianalgesic conversion factors are defined in `assets/script.js`. These values drive the calculations and should be reviewed and verified against your institution's protocols or up-to-date pharmacological resources.
