@@ -1,0 +1,38 @@
+name: Node Tests and Preview Pages
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - run: node tests/run_tests.js
+
+  deploy-preview:
+    needs: test
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build preview folder
+        run: |
+          BRANCH="${{ github.head_ref || github.ref_name }}"
+          SAFE_BRANCH=$(echo "$BRANCH" | tr '/.' '-')
+          PREVIEW_DIR=previews/$SAFE_BRANCH
+          mkdir -p "$PREVIEW_DIR"
+          rsync -av --exclude '.git*' --exclude 'previews' --exclude 'tests' ./ "$PREVIEW_DIR/"
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./previews
+          keep_files: true
+          publish_branch: gh-pages
+
