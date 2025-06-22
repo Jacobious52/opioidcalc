@@ -13,8 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Run dummy tests
-        run: echo "No tests configured"
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Run calculation tests
+        run: node tests/test_runner.js
 
   deploy:
     needs: test
