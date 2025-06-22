@@ -56,85 +56,12 @@
                                 </button>
                             </div>
 
-                            <!-- Target Opioid Section -->
-                            <div class="mb-4">
-                                <h5 class="mb-3"><i class="fas fa-bullseye me-2"></i>Target Opioid</h5>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Opioid</label>
-                                        <select class="form-select" id="targetOpioid" required>
-                                        </select>
-                                        <div class="invalid-feedback">Please select a target opioid.</div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Route</label>
-                                        <select class="form-select" id="targetRoute" required>
-                                        </select>
-                                        <div class="invalid-feedback">Please select a route.</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Patient Factors Section -->
-                            <div class="mb-4">
-                                <h5 class="mb-3"><i class="fas fa-user-md me-2"></i>Patient Factors</h5>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <div class="form-check form-switch mb-3">
-                                            <input class="form-check-input" type="checkbox" id="isSwitching">
-                                            <label class="form-check-label" for="isSwitching">Switching Opioids (apply reduction)</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Patient Factors</label>
-                                        <select class="form-select" id="patientFactor">
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
                             <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                                 <button type="reset" class="btn btn-outline-secondary me-md-2">
                                     <i class="fas fa-undo me-1"></i> Reset
                                 </button>
-                                <button type="submit" class="btn btn-primary">
-                                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                                    <span class="button-text-loading d-none">Calculating...</span>
-                                    <span class="button-text-default"><i class="fas fa-calculator me-1"></i>Calculate Conversion</span>
-                                </button>
                             </div>
                         </form>
-                    </div>
-                </div>
-
-                <!-- Error Display Section -->
-                <div id="errorSection" class="alert alert-danger d-none" role="alert">
-                    <h5 class="alert-heading">Calculation Error</h5>
-                    <p id="errorMessage"></p>
-                </div>
-
-                <!-- Results Section (initially hidden) -->
-                <div id="resultsSection" class="d-none">
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-success text-white">
-                            <h4 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Conversion Results</h4>
-                        </div>
-                        <div class="card-body">
-                            <div class="alert alert-info">
-                                <h5 class="alert-heading">Recommended Dose</h5>
-                                <p class="mb-0 h4" id="recommendedDose">-</p>
-                                <hr>
-                                <p class="mb-0 text-muted" id="calculatedDose" style="font-size: 0.9rem;">Calculated: -</p>
-                            </div>
-                            <div class="mt-4">
-                                <h5><i class="fas fa-calculator me-2"></i>Calculation Steps</h5>
-                                <div id="stepsContainer" class="table-responsive"></div>
-                            </div>
-                            <div class="mt-4">
-                                <h5><i class="fas fa-sticky-note me-2"></i>Important Notes</h5>
-                                <ul id="notesList" class="list-group"></ul>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -194,11 +121,10 @@
     <!-- Opioid Row Template (for cloning) -->
     <template id="opioidRowTemplate">
         <div class="opioid-row mb-3 p-3 border rounded">
-            <div class="row g-3">
+            <div class="row g-3 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label">Opioid</label>
-                    <select class="form-select opioid-drug" required>
-                    </select>
+                    <select class="form-select opioid-drug" required></select>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Dose</label>
@@ -210,22 +136,34 @@
                         </select>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label">Route</label>
-                    <select class="form-select opioid-route" required>
-                    </select>
+                    <select class="form-select opioid-route" required></select>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">Frequency</label>
                     <input type="text" class="form-control opioid-frequency" list="frequenciesDataList" required value="1/d">
-                    <datalist id="frequenciesDataList">
-                    </datalist>
+                    <datalist id="frequenciesDataList"></datalist>
                 </div>
-                <div class="col-md-1 d-flex align-items-end">
-                    <button type="button" class="btn btn-outline-danger btn-sm remove-opioid-btn">
-                        <i class="fas fa-times"></i>
-                    </button>
+                <div class="col-md-2 text-end">
+                    <button type="button" class="btn btn-outline-secondary btn-sm me-1 advanced-toggle" data-bs-toggle="collapse">Advanced</button>
+                    <button type="button" class="btn btn-outline-danger btn-sm remove-opioid-btn"><i class="fas fa-times"></i></button>
                 </div>
+            </div>
+            <div class="collapse mt-3 advanced-section">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">To Opioid</label>
+                        <select class="form-select target-opioid"></select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">To Route</label>
+                        <select class="form-select target-route"></select>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3">
+                <span class="result-text fw-bold"></span>
             </div>
         </div>
     </template>
