@@ -34,6 +34,11 @@ const AVAILABLE_ROUTES = Object.values(Route).map(r => ({ id: r, name: r.toUpper
 const AVAILABLE_PATIENT_FACTORS = Object.values(PatientFactor).map(f => ({ id: f, name: f.charAt(0).toUpperCase() + f.slice(1) }));
 const COMMON_FREQUENCIES = ["q4h", "q6h", "q8h", "q12h", "q24h", "qd", "bid", "tid", "qid", "prn", "1/d", "2/d", "3/d", "4/d"];
 
+function getDisplayName(collection, id) {
+    const item = collection.find(el => el.id === id);
+    return item ? item.name : id;
+}
+
 const EQUIANALGESIC_FACTORS = {
     [OpioidType.MORPHINE]: { [Route.ORAL]: 1.0, [Route.IV]: 2.0, [Route.IM]: 2.0, [Route.SUBLINGUAL]: 1.0, [Route.RECTAL]: 1.0 },
     [OpioidType.OXYCODONE]: { [Route.ORAL]: 1.5, [Route.IV]: 3.0, [Route.RECTAL]: 1.5 },
@@ -245,7 +250,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const result = convertOpioidDose(request);
-            resultEl.textContent = `Recommended: ${result.target_dose} mg/day (calc ${result.calculated_target_dose.toFixed(2)} mg)`;
+            const opioidName = getDisplayName(AVAILABLE_OPIOIDS, request.target_opioid);
+            const routeName = getDisplayName(AVAILABLE_ROUTES, request.target_route);
+            resultEl.innerHTML =
+                `Exact: ${result.calculated_target_dose.toFixed(2)} mg/day ${opioidName} ${routeName}<br>` +
+                `Common: ${result.target_dose} mg/day ${opioidName} ${routeName}`;
         } catch (err) {
             resultEl.textContent = 'Error: ' + err.message;
         }
