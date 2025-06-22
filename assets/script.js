@@ -204,6 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!form) return;
 
     const addOpioidBtn = document.getElementById('addOpioidBtn');
+    const exportCsvBtn = document.getElementById('exportCsvBtn');
     const opioidRowsContainer = document.getElementById('opioidRowsContainer');
     const opioidRowTemplate = document.getElementById('opioidRowTemplate');
     let rowIdCounter = 0;
@@ -288,12 +289,75 @@ document.addEventListener('DOMContentLoaded', () => {
         calculateRow(rowEl);
     }
 
+    function exportCsv() {
+        const rows = opioidRowsContainer.querySelectorAll('.opioid-row');
+        const data = [[
+            'Opioid',
+            'Dose',
+            'Unit',
+            'Route',
+            'Frequency',
+            'Target Opioid',
+            'Target Route',
+            'Switching',
+            'Patient Factor',
+            'OME (mg PO)'
+        ]];
+
+        rows.forEach(rowEl => {
+            const drug = rowEl.querySelector('.opioid-drug').value;
+            const dose = parseFloat(rowEl.querySelector('.opioid-dose').value);
+            const unit = rowEl.querySelector('.opioid-unit').value;
+            const route = rowEl.querySelector('.opioid-route').value;
+            const freq = rowEl.querySelector('.opioid-frequency').value;
+            const targetDrug = rowEl.querySelector('.target-opioid').value;
+            const targetRoute = rowEl.querySelector('.target-route').value;
+            const switching = rowEl.querySelector('.switching-select').value;
+            const patientFactor = rowEl.querySelector('.patient-factor-select').value;
+
+            if (isNaN(dose) || dose <= 0) {
+                return;
+            }
+
+            const ome = toOme(drug, dose, unit, route, freq).ome;
+            data.push([
+                drug,
+                dose,
+                unit,
+                route,
+                freq,
+                targetDrug,
+                targetRoute,
+                switching,
+                patientFactor,
+                ome.toFixed(2)
+            ]);
+        });
+
+        if (data.length === 1) return; // nothing to export
+
+        const csvContent = data.map(r => r.join(',')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'opioid_calculations.csv';
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
     form.addEventListener('reset', () => {
         opioidRowsContainer.innerHTML = '';
         addOpioidRow();
     });
 
     addOpioidBtn.addEventListener('click', addOpioidRow);
+    if (exportCsvBtn) {
+        exportCsvBtn.addEventListener('click', exportCsv);
+    }
 
     addOpioidRow();
 });
