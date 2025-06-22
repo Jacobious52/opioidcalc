@@ -201,15 +201,12 @@ function convertOpioidDose(request) {
 // --- DOM MANIPULATION & EVENT LISTENERS (Run after DOM is loaded) ---
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('conversionForm');
-    // Only run form logic if the form exists on the page
     if (!form) return;
 
     const addOpioidBtn = document.getElementById('addOpioidBtn');
     const opioidRowsContainer = document.getElementById('opioidRowsContainer');
     const opioidRowTemplate = document.getElementById('opioidRowTemplate');
-    const resultsSection = document.getElementById('resultsSection');
-    const errorSection = document.getElementById('errorSection');
-    const errorMessageEl = document.getElementById('errorMessage');
+    let rowIdCounter = 0;
 
     function populateSelect(selectElement, options, defaultSelection) {
         selectElement.innerHTML = '';
@@ -224,97 +221,77 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function calculateRow(rowEl) {
+        const resultEl = rowEl.querySelector('.result-text');
+        try {
+            const request = {
+                current_opioids: [{
+                    drug: rowEl.querySelector('.opioid-drug').value,
+                    dose: parseFloat(rowEl.querySelector('.opioid-dose').value),
+                    unit: rowEl.querySelector('.opioid-unit').value,
+                    route: rowEl.querySelector('.opioid-route').value,
+                    frequency: rowEl.querySelector('.opioid-frequency').value
+                }],
+                target_opioid: rowEl.querySelector('.target-opioid').value,
+                target_route: rowEl.querySelector('.target-route').value,
+                is_switching: false,
+                patient_factor: PatientFactor.NONE
+            };
+
+            if (isNaN(request.current_opioids[0].dose) || request.current_opioids[0].dose <= 0) {
+                resultEl.textContent = 'Enter valid dose';
+                return;
+            }
+
+            const result = convertOpioidDose(request);
+            resultEl.textContent = `Recommended: ${result.target_dose} mg/day (calc ${result.calculated_target_dose.toFixed(2)} mg)`;
+        } catch (err) {
+            resultEl.textContent = 'Error: ' + err.message;
+        }
+    }
+
     function addOpioidRow() {
-        const newRow = opioidRowTemplate.content.cloneNode(true);
-        const drugSelect = newRow.querySelector('.opioid-drug');
-        const routeSelect = newRow.querySelector('.opioid-route');
-        const frequencyDatalist = newRow.querySelector('datalist');
+        const frag = opioidRowTemplate.content.cloneNode(true);
+        const rowEl = frag.querySelector('.opioid-row');
+
+        rowIdCounter += 1;
+        const collapse = rowEl.querySelector('.advanced-section');
+        const toggle = rowEl.querySelector('.advanced-toggle');
+        const collapseId = `adv${rowIdCounter}`;
+        collapse.id = collapseId;
+        toggle.setAttribute('data-bs-target', `#${collapseId}`);
+
+        const drugSelect = rowEl.querySelector('.opioid-drug');
+        const routeSelect = rowEl.querySelector('.opioid-route');
+        const frequencyDatalist = rowEl.querySelector('datalist');
+        const targetDrugSelect = rowEl.querySelector('.target-opioid');
+        const targetRouteSelect = rowEl.querySelector('.target-route');
 
         populateSelect(drugSelect, AVAILABLE_OPIOIDS, OpioidType.MORPHINE);
         populateSelect(routeSelect, AVAILABLE_ROUTES, Route.ORAL);
+        populateSelect(targetDrugSelect, AVAILABLE_OPIOIDS, OpioidType.MORPHINE);
+        populateSelect(targetRouteSelect, AVAILABLE_ROUTES, Route.ORAL);
         frequencyDatalist.innerHTML = COMMON_FREQUENCIES.map(f => `<option value="${f}"></option>`).join('');
 
-        newRow.querySelector('.remove-opioid-btn').addEventListener('click', (e) => {
+        rowEl.querySelector('.remove-opioid-btn').addEventListener('click', (e) => {
             e.target.closest('.opioid-row').remove();
         });
 
-        opioidRowsContainer.appendChild(newRow);
+        rowEl.querySelectorAll('input, select').forEach(el => {
+            el.addEventListener('input', () => calculateRow(rowEl));
+            el.addEventListener('change', () => calculateRow(rowEl));
+        });
+
+        opioidRowsContainer.appendChild(rowEl);
+        calculateRow(rowEl);
     }
 
-    function displayResults(result) {
-        document.getElementById('recommendedDose').textContent = `${result.target_dose} mg/day`;
-        document.getElementById('calculatedDose').textContent = `Calculated: ${result.calculated_target_dose.toFixed(2)} mg/day`;
-
-        const stepsContainer = document.getElementById('stepsContainer');
-        stepsContainer.innerHTML = `
-            <table class="table table-sm table-striped table-bordered">
-                <thead><tr><th>Step</th><th>Details</th><th>Value</th></tr></thead>
-                <tbody>
-                    ${result.steps.map(s => `<tr><td>${s.description}</td><td>${s.details}</td><td>${typeof s.value === 'number' ? s.value.toFixed(2) : s.value}</td></tr>`).join('')}
-                </tbody>
-            </table>`;
-
-        const notesList = document.getElementById('notesList');
-        notesList.innerHTML = result.notes.map(n => `<li class="list-group-item">${n}</li>`).join('');
-
-        resultsSection.classList.remove('d-none');
-        errorSection.classList.add('d-none');
-    }
-
-    function displayError(message) {
-        errorMessageEl.textContent = message;
-        errorSection.classList.remove('d-none');
-        resultsSection.classList.add('d-none');
-    }
-
-    function initializeForm() {
-        populateSelect(document.getElementById('targetOpioid'), AVAILABLE_OPIOIDS, OpioidType.MORPHINE);
-        populateSelect(document.getElementById('targetRoute'), AVAILABLE_ROUTES, Route.ORAL);
-        populateSelect(document.getElementById('patientFactor'), AVAILABLE_PATIENT_FACTORS, PatientFactor.NONE);
-        addOpioidRow();
-    }
-
-    form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        
-        try {
-            const currentOpioids = [...opioidRowsContainer.querySelectorAll('.opioid-row')].map(row => ({
-                drug: row.querySelector('.opioid-drug').value,
-                dose: parseFloat(row.querySelector('.opioid-dose').value),
-                unit: row.querySelector('.opioid-unit').value,
-                route: row.querySelector('.opioid-route').value,
-                frequency: row.querySelector('.opioid-frequency').value
-            }));
-
-            if (currentOpioids.some(o => isNaN(o.dose) || o.dose <= 0)) {
-                throw new Error('Please enter a valid, positive dose for all medications.');
-            }
-
-            const request = {
-                current_opioids: currentOpioids,
-                target_opioid: document.getElementById('targetOpioid').value,
-                target_route: document.getElementById('targetRoute').value,
-                is_switching: document.getElementById('isSwitching').checked,
-                patient_factor: document.getElementById('patientFactor').value
-            };
-
-            const result = convertOpioidDose(request);
-            displayResults(result);
-
-        } catch (error) {
-            displayError(error.message);
-        }
-    });
-    
     form.addEventListener('reset', () => {
         opioidRowsContainer.innerHTML = '';
         addOpioidRow();
-        resultsSection.classList.add('d-none');
-        errorSection.classList.add('d-none');
     });
 
     addOpioidBtn.addEventListener('click', addOpioidRow);
 
-    // --- INITIALIZATION ---
-    initializeForm();
+    addOpioidRow();
 });
