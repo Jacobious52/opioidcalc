@@ -9,36 +9,35 @@
     input, button { margin: 10px 0; }
     table { border-collapse: collapse; width: 100%; margin-top: 20px; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background: #f0f0f0; }
+    th { background: #f0f0f0; position: sticky; top: 0; }
     #downloadLink { display: block; margin-top: 20px; }
     #preview { max-height: 60vh; overflow: auto; }
   </style>
 </head>
 <body>
   <h1>OME CSV Converter</h1>
-  <p>Select a CSV file with the original opioid dose columns; the tool will output a new CSV with OME values in the same format as the Python script.</p>
+  <p>Upload a CSV with <strong>Patient URN</strong> as the first column and free-text opioid columns thereafter; the tool will output only the Patient URN and the four OME columns.</p>
   <input type="file" id="fileInput" accept=".csv" />
   <button id="processBtn" disabled>Convert to OME</button>
   <a id="downloadLink" href="#" download="converted_omes.csv" style="display:none;">Download Converted CSV</a>
   <div id="preview"></div>
 
-  <!-- PapaParse for CSV parsing/stringify -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <script>
-    // Conversion factors (ANZCA)
+    // ANZCA conversion factors
     const conv = {
-      morphine:            { oral: 1, parenteral_mg: 3, parenteral_mcg: 3/1000 },
-      oxycodone:           { oral: 1.5, parenteral_mg: 3 },
-      hydromorphone:       { oral: 5, parenteral_mg: 15 },
-      codeine:             { oral: 0.13, parenteral_mg: 0.25 },
-      tramadol:            { oral: 0.2 },
-      tapentadol:          { oral: 0.3 },
-      buprenorphine:       { sublingual_mg: 40, transdermal_mcg_hr: 2 },
-      fentanyl:            { transdermal_mcg_hr: 3, parenteral_mcg: 0.2 },
-      sufentanil:          { parenteral_mcg: 2 },
-      pethidine:           { parenteral_mg: 0.4 },
+      morphine: { oral: 1, parenteral_mg: 3, parenteral_mcg: 0.003 },
+      oxycodone: { oral: 1.5, parenteral_mg: 3 },
+      hydromorphone: { oral: 5, parenteral_mg: 15 },
+      codeine: { oral: 0.13, parenteral_mg: 0.25 },
+      tramadol: { oral: 0.2 },
+      tapentadol: { oral: 0.3 },
+      buprenorphine: { sublingual_mg: 40, transdermal_mcg_hr: 2 },
+      fentanyl: { transdermal_mcg_hr: 3, parenteral_mcg: 0.2 },
+      sufentanil: { parenteral_mcg: 2 },
+      pethidine: { parenteral_mg: 0.4 }
     };
-    const synonyms = { endone: 'oxycodone', dilaudid: 'hydromorphone', targin: 'oxycodone', ms: 'morphine', ms04: 'morphine', 'ms0_4': 'morphine' };
+    const synonyms = { endone: 'oxycodone', dilaudid: 'hydromorphone', targin: 'oxycodone', ms: 'morphine', ms04: 'morphine', ms0_4: 'morphine' };
     const nilList = ['nil', 'none', 'nill', ''];
     const periodCols = [
       'Opioids pre-op - type of opioid and dose ',
@@ -46,14 +45,12 @@
       'Total opioid (24-48h post-op)',
       'Total opioid (48-72 post-op) '
     ];
-    const outputCols = ['Patient URN', ...periodCols];
 
     function computeOME(text) {
       if (!text || nilList.includes(text.trim().toLowerCase())) return 0;
       let sum = 0;
       text.split(/[;,]/).forEach(part => {
         const tok = part.trim().toLowerCase();
-        // route detection
         let route = 'oral';
         if (/\b(iv|inj|injection)\b/.test(tok) || tok.includes('intrathecal') || tok.includes('subcut') || tok.includes('sc ')) {
           route = 'parenteral';
@@ -62,19 +59,12 @@
         } else if (tok.includes('sublin')) {
           route = 'sublingual';
         }
-        // drug lookup
         let drug = Object.keys(conv).find(d => tok.includes(d));
-        if (!drug) {
-          for (const syn in synonyms) {
-            if (tok.includes(syn)) { drug = synonyms[syn]; break; }
-          }
-        }
+        if (!drug) for (const syn in synonyms) if (tok.includes(syn)) { drug = synonyms[syn]; break; }
         if (!drug) return;
-        // amount & unit
-        const m = tok.match(/(\d+(?:\.\d+)?)\s*(mcg\/hr|mcg|mg)/);
+        const m = tok.match(/(\d+(\.\d+)?)\s*(mcg\/hr|mcg|mg)/);
         if (!m) return;
-        const amt = parseFloat(m[1]), unit = m[2];
-        // select factor
+        const amt = parseFloat(m[1]), unit = m[3];
         let factor;
         if (route === 'oral' && unit === 'mg') factor = conv[drug].oral;
         else if (route === 'parenteral') factor = unit === 'mg' ? conv[drug].parenteral_mg : conv[drug].parenteral_mcg;
@@ -86,49 +76,46 @@
       return Math.round(sum * 10) / 10;
     }
 
-    const fileInput = document.getElementById('fileInput');
-    const processBtn = document.getElementById('processBtn');
-    const downloadLink = document.getElementById('downloadLink');
-    const preview = document.getElementById('preview');
-
-    fileInput.addEventListener('change', () => {
-      processBtn.disabled = !fileInput.files.length;
-      preview.innerHTML = '';
+    document.getElementById('fileInput').addEventListener('change', function() {
+      document.getElementById('processBtn').disabled = !this.files.length;
+      document.getElementById('preview').innerHTML = '';
+      document.getElementById('downloadLink').style.display = 'none';
     });
 
-    processBtn.addEventListener('click', () => {
-      Papa.parse(fileInput.files[0], {
+    document.getElementById('processBtn').addEventListener('click', function() {
+      Papa.parse(document.getElementById('fileInput').files[0], {
         header: true,
         skipEmptyLines: true,
-        complete: results => {
-          let data = results.data;
-          // Compute and overwrite period columns
+        complete: function(results) {
+          const data = results.data;
+          // Convert only period columns
           data.forEach(row => {
             periodCols.forEach(col => {
               row[col] = computeOME(row[col]);
             });
           });
-
-          // Prepare export data with only desired columns
+          // Build export fields
+          const exportFields = ['Patient URN', ...periodCols];
           const exportData = data.map(row => {
-            let obj = {};
-            outputCols.forEach(c => obj[c] = row[c] !== undefined ? row[c] : '');
+            const obj = {};
+            exportFields.forEach(f => obj[f] = row[f] !== undefined ? row[f] : '');
             return obj;
           });
-
-          // Preview all rows
-          let html = '<table><thead><tr>' + outputCols.map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>';
+          // Preview all data
+          let html = '<table><thead><tr>' +
+            exportFields.map(c => `<th>${c}</th>`).join('') +
+            '</tr></thead><tbody>';
           exportData.forEach(r => {
-            html += '<tr>' + outputCols.map(c => `<td>${r[c]}</td>`).join('') + '</tr>';
+            html += '<tr>' + exportFields.map(c => `<td>${r[c]}</td>`).join('') + '</tr>';
           });
           html += '</tbody></table>';
-          preview.innerHTML = html;
-
-          // Create downloadable CSV
-          const csv = Papa.unparse({ fields: outputCols, data: exportData });
+          document.getElementById('preview').innerHTML = html;
+          // Download link
+          const csv = Papa.unparse({ fields: exportFields, data: exportData });
           const blob = new Blob([csv], { type: 'text/csv' });
-          downloadLink.href = URL.createObjectURL(blob);
-          downloadLink.style.display = 'inline';
+          const link = document.getElementById('downloadLink');
+          link.href = URL.createObjectURL(blob);
+          link.style.display = 'block';
         }
       });
     });
