@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opioid OME Calculator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+        h3 {
+            color: #34495e;
+        }
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .conversion-table {
+            margin: 30px 0;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        .conversion-table table {
+            width: 100%;
+            min-width: 600px;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .conversion-table th {
+            background-color: #2c3e50;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+        .conversion-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .conversion-table tr:hover {
+            background-color: #e9ecef;
+        }
+        .upload-section {
+            margin: 30px 0;
+            padding: 30px;
+            border: 2px dashed #3498db;
+            border-radius: 8px;
+            text-align: center;
+            background-color: #f0f8ff;
+            transition: all 0.3s ease;
+        }
+        .upload-section:hover {
+            border-color: #2980b9;
+            background-color: #e6f3ff;
+        }
+        input[type="file"] {
+            margin: 15px 0;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+            cursor: pointer;
+        }
+        input[type="file"]:hover {
+            border-color: #3498db;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .test-button {
+            background-color: #9b59b6;
+        }
+        .test-button:hover {
+            background-color: #8e44ad;
+            box-shadow: 0 4px 12px rgba(155, 89, 182, 0.3);
+        }
+        #download-link {
+            display: none;
+            margin-top: 30px;
+            text-align: center;
+            padding: 25px;
+            background-color: #e8f5e9;
+            border-radius: 8px;
+            border: 1px solid #c8e6c9;
+        }
+        #download-link a {
+            display: inline-block;
+            background-color: #27ae60;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            margin: 10px 0;
+        }
+        #download-link a:hover {
+            background-color: #229954;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+        }
+        #status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 500;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        .test-section {
+            margin-top: 30px;
+            padding: 25px;
+            background-color: #f4f0ff;
+            border-radius: 8px;
+            border: 1px solid #d0c4e8;
+        }
+        .test-input {
+            width: 70%;
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #d0c4e8;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        .test-input:focus {
+            outline: none;
+            border-color: #9b59b6;
+        }
+        .examples {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #555;
+            background-color: white;
+            padding: 15px;
+            border-radius: 6px;
+        }
+        .examples ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .examples li {
+            margin: 5px 0;
+            font-family: 'Courier New', monospace;
+        }
+        .unit-test-status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+        .test-pass {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .test-fail {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Opioid to Oral Morphine Equivalent (OME) Calculator</h1>
+        <p class="subtitle">
+            Based on ANZCA Faculty of Pain Medicine PS01(PM) 2021 Guidelines
+        </p>
+        
+        <div class="conversion-table">
+            <h2>ANZCA Opioid Conversion Factors</h2>
+            <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Opioid</th>
+                        <th>Oral (mg)</th>
+                        <th>Parenteral (mg)</th>
+                        <th>Parenteral (mcg)</th>
+                        <th>Transdermal (mcg/hr)</th>
+                        <th>Sublingual (mg)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Morphine</strong></td>
+                        <td>1</td>
+                        <td>3</td>
+                        <td>0.003</td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Oxycodone</strong> (Endone, OxyContin)</td>
+                        <td>1.5</td>
+                        <td>3</td>
+                        <td>0.003</td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Hydromorphone</strong> (Dilaudid)</td>
+                        <td>5</td>
+                        <td>15</td>
+                        <td>0.015</td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Codeine</strong></td>
+                        <td>0.13</td>
+                        <td>0.25</td>
+                        <td>0.00025</td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Tramadol</strong></td>
+                        <td>0.2</td>
+                        <td>0.2</td>
+                        <td>0.0002</td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Tapentadol</strong> (Palexia)</td>
+                        <td>0.3</td>
+                        <td>0.3</td>
+                        <td>0.0003</td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Fentanyl</strong></td>
+                        <td>-</td>
+                        <td>200</td>
+                        <td>0.2</td>
+                        <td>3</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Buprenorphine</strong> (Norspan)</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>2</td>
+                        <td>40</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Pethidine</strong></td>
+                        <td>0.4</td>
+                        <td>0.4</td>
+                        <td>0.0004</td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Sufentanil</strong></td>
+                        <td>-</td>
+                        <td>2000</td>
+                        <td>2</td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                </tbody>
+            </table>
+            </div>
+            <p style="margin-top: 10px; font-size: 14px; color: #666;">
+                <strong>Note:</strong> Conversion factors show how many mg of morphine equivalent each unit provides. 
+                For parenteral routes, IT (intrathecal) uses the same factors as IV/IM/SC. A dash (-) indicates the route is not typically used for that medication.
+                <br><strong>Important:</strong> Transdermal patch factors (mcg/hr) already give the daily OME - do not multiply by 24.
+            </p>
+        </div>
+        
+        <div class="upload-section">
+            <h2>Upload CSV File</h2>
+            <input type="file" id="csvFile" accept=".csv">
+            <br>
+            <button onclick="processCSV()" style="font-size: 18px; padding: 15px 30px;">
+                <span style="margin-right: 5px;">📊</span> Calculate OME
+            </button>
+            <br><br>
+            <div style="font-size: 14px; color: #555; background-color: white; padding: 10px; border-radius: 4px; margin-top: 15px;">
+                <strong>Note:</strong> Values are assumed to be daily totals unless frequency is specified (e.g., "5mg BD" = 10mg daily)
+            </div>
+        </div>
+        
+        <div id="status"></div>
+        
+        <div id="download-link">
+            <h3>✓ Download Results</h3>
+            <a id="downloadBtn" download="converted_omes.csv">📥 Download Converted OME CSV</a>
+            <br>
+            <small style="color: #666; display: block; margin-top: 10px;">Right-click and "Save link as..." to save with a custom filename</small>
+        </div>
+        
+        <div id="preview"></div>
+        
+        <div class="test-section">
+            <h3>Test Calculator</h3>
+            <p>Enter an opioid regimen to test the calculation:</p>
+            <input type="text" id="testInput" class="test-input" placeholder="e.g., fentanyl 90mcg IV, intrathecal morphine 100mcg, endone 5mg">
+            <button onclick="testCalculation()">Calculate</button>
+            <div id="testResult" style="margin-top: 10px; font-weight: 600;"></div>
+            
+            <div style="margin-top: 20px;">
+                <button onclick="runUnitTests()" class="test-button">Re-run Unit Tests</button>
+                <div id="unitTestResults" style="margin-top: 10px;"></div>
+                <p style="font-size: 13px; color: #888; margin-top: 5px;">Unit tests run automatically on page load</p>
+            </div>
+            
+            <div class="examples">
+                <strong>Examples:</strong>
+                <ul>
+                    <li>"fentanyl 90mcg IV, intrathecal morphine 100mcg, endone 5mg" → 25.8mg</li>
+                    <li>"intrathecal fentanyl 15mcg, intrathecal morphine 100mcg, endone 5mg" → 10.8mg</li>
+                    <li>"5mg endone" → 7.5mg</li>
+                    <li>"morphine 10mg BD" → 20mg (frequency multiplier applied)</li>
+                    <li>"oxycodone 5mg TDS" → 22.5mg (5mg × 3 times × 1.5 factor)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ANZCA conversion factors - separate factors for mg and mcg doses
+        const conversionFactors = {
+            morphine: { 
+                oral_mg: 1, 
+                parenteral_mg: 3, 
+                parenteral_mcg: 0.003 // 3/1000
+            },
+            oxycodone: { 
+                oral_mg: 1.5, 
+                parenteral_mg: 3,
+                parenteral_mcg: 0.003 // 3/1000
+            },
+            hydromorphone: { 
+                oral_mg: 5, 
+                parenteral_mg: 15,
+                parenteral_mcg: 0.015 // 15/1000
+            },
+            codeine: { 
+                oral_mg: 0.13, 
+                parenteral_mg: 0.25,
+                parenteral_mcg: 0.00025 // 0.25/1000
+            },
+            tramadol: { 
+                oral_mg: 0.2,
+                parenteral_mg: 0.2,
+                parenteral_mcg: 0.0002 // Same as oral
+            },
+            tapentadol: { 
+                oral_mg: 0.3,
+                parenteral_mg: 0.3, // Assuming same as oral
+                parenteral_mcg: 0.0003
+            },
+            fentanyl: { 
+                transdermal_mcg_hr: 3, // mcg/hr
+                parenteral_mcg: 0.2,
+                parenteral_mg: 200 // 0.2 * 1000
+            },
+            buprenorphine: { 
+                sublingual_mg: 40,
+                sublingual_mcg: 0.04, // 40/1000
+                transdermal_mcg_hr: 2
+            },
+            pethidine: { 
+                oral_mg: 0.4, // Not in ANZCA oral list but included for completeness
+                parenteral_mg: 0.4,
+                parenteral_mcg: 0.0004
+            },
+            sufentanil: { 
+                parenteral_mcg: 2,
+                parenteral_mg: 2000 // 2 * 1000
+            }
+        };
+        
+        // Drug name synonyms
+        const drugSynonyms = {
+            endone: 'oxycodone',
+            oxycontin: 'oxycodone',
+            oxynorm: 'oxycodone',
+            targin: 'oxycodone',
+            dilaudid: 'hydromorphone',
+            jurnista: 'hydromorphone',
+            kapanol: 'morphine',
+            'ms contin': 'morphine',
+            ordine: 'morphine',
+            sevredol: 'morphine',
+            anamorph: 'morphine',
+            ms: 'morphine',
+            durogesic: 'fentanyl',
+            norspan: 'buprenorphine',
+            temgesic: 'buprenorphine',
+            suboxone: 'buprenorphine',
+            subutex: 'buprenorphine',
+            palexia: 'tapentadol',
+            tramal: 'tramadol',
+            zydol: 'tramadol'
+        };
+
+        function parseOpioidData(text) {
+            // Handle nil/none cases
+            const nilList = ['nil', 'none', 'nill', 'n/a', '-'];
+            if (!text || nilList.includes(text.trim().toLowerCase())) return 0;
+            
+            let totalOME = 0;
+            
+            // Clean and split the text
+            text = text.toLowerCase().trim();
+            const entries = text.split(/[,;+&]|\band\b/);
+            
+            for (let entry of entries) {
+                entry = entry.trim();
+                if (!entry || nilList.includes(entry)) continue;
+                
+                // Determine route from keywords
+                let route = 'oral'; // default
+                const entryLower = entry.toLowerCase();
+                
+                if (/\b(iv|inj|injection|im|sc|subcut|subcutaneous)\b/.test(entryLower) || 
+                    entryLower.includes('intrathecal') || entryLower.includes(' it ')) {
+                    route = 'parenteral';
+                } else if (entryLower.includes('patch') || entryLower.includes('mcg/hr') || entryLower.includes('mcg/h')) {
+                    route = 'transdermal';
+                } else if (entryLower.includes('sublingual') || entryLower.includes(' sl ')) {
+                    route = 'sublingual';
+                }
+                
+                // Find drug name - check main drugs first, then synonyms
+                let drug = null;
+                
+                // Standardize common drug name variations
+                const drugPatterns = {
+                    morphine: /morph/i,
+                    oxycodone: /oxy(?!toc)/i, // Avoid matching oxytocin
+                    hydromorphone: /hydro/i,
+                    codeine: /codeine/i,
+                    tramadol: /tram/i,
+                    tapentadol: /tapen/i,
+                    pethidine: /peth|meper/i,
+                    sufentanil: /sufent/i,  // Check before fentanyl
+                    fentanyl: /fent/i,
+                    buprenorphine: /bup/i
+                };
+                
+                // Check for main drug names using patterns
+                for (let [drugName, pattern] of Object.entries(drugPatterns)) {
+                    if (pattern.test(entryLower)) {
+                        drug = drugName;
+                        break;
+                    }
+                }
+                
+                // If not found, check synonyms
+                if (!drug) {
+                    for (let [synonym, actualDrug] of Object.entries(drugSynonyms)) {
+                        if (entryLower.includes(synonym)) {
+                            drug = actualDrug;
+                            break;
+                        }
+                    }
+                }
+                
+                if (!drug) continue;
+                
+                // Extract dose and unit - multiple patterns for flexibility
+                const patterns = [
+                    /(\d+\.?\d*)\s*(mcg\/hr|mcg\/h|mcg|microg|ug|mg)/i,
+                    /(\d+\.?\d*)\s*(?:micro)?(?:grams?|mg)/i,
+                    /(\d+\.?\d*)(?:\s|$)/ // Just a number
+                ];
+                
+                let match = null;
+                for (let pattern of patterns) {
+                    match = entry.match(pattern);
+                    if (match) break;
+                }
+                
+                if (!match) continue;
+                
+                const dose = parseFloat(match[1]);
+                let unit = match[2] || 'mg'; // Default to mg if no unit specified
+                unit = unit.toLowerCase();
+                
+                // Normalize unit names
+                if (unit === 'ug' || unit === 'microg' || unit.includes('micro')) {
+                    unit = 'mcg';
+                }
+                
+                // Extract frequency if specified
+                let frequencyMultiplier = 1; // Default: once daily
+                
+                const freqPatterns = [
+                    { pattern: /\b(bd|bid|twice)\b/i, multiplier: 2 },
+                    { pattern: /\b(tds|tid|three times|8 ?hr|8 ?hourly)\b/i, multiplier: 3 },
+                    { pattern: /\b(qid|qds|four times|6 ?hr|6 ?hourly)\b/i, multiplier: 4 },
+                    { pattern: /\b(prn|as required|as needed)\b/i, multiplier: 1 }, // Conservative for PRN
+                    { pattern: /\b(daily|od|once|24 ?hr)\b/i, multiplier: 1 },
+                    { pattern: /\b(nocte|night)\b/i, multiplier: 1 },
+                    { pattern: /\b(stat|single)\b/i, multiplier: 1 }
+                ];
+                
+                for (let freq of freqPatterns) {
+                    if (freq.pattern.test(entry)) {
+                        frequencyMultiplier = freq.multiplier;
+                        break;
+                    }
+                }
+                
+                // Calculate OME based on drug, route, and unit
+                let omeValue = 0;
+                const factors = conversionFactors[drug];
+                
+                if (route === 'transdermal') {
+                    // Transdermal patches - conversion factor applies to mcg/hr rate
+                    if (unit.includes('/h')) {
+                        // Already per hour - apply factor directly
+                        omeValue = dose * (factors.transdermal_mcg_hr || 0);
+                    } else if (unit === 'mcg') {
+                        // If just mcg for a patch, assume it's per hour
+                        omeValue = dose * (factors.transdermal_mcg_hr || 0);
+                    }
+                } else if (route === 'sublingual') {
+                    if (unit === 'mg') {
+                        omeValue = dose * frequencyMultiplier * (factors.sublingual_mg || factors.oral_mg || 0);
+                    } else if (unit === 'mcg') {
+                        omeValue = dose * frequencyMultiplier * (factors.sublingual_mcg || 0);
+                    }
+                } else if (route === 'parenteral') {
+                    if (unit === 'mg') {
+                        omeValue = dose * frequencyMultiplier * (factors.parenteral_mg || 0);
+                    } else if (unit === 'mcg') {
+                        omeValue = dose * frequencyMultiplier * (factors.parenteral_mcg || 0);
+                    }
+                } else { // oral
+                    if (unit === 'mg') {
+                        omeValue = dose * frequencyMultiplier * (factors.oral_mg || 0);
+                    } else if (unit === 'mcg') {
+                        // For oral mcg, convert to mg first then apply oral_mg factor
+                        omeValue = (dose / 1000) * frequencyMultiplier * (factors.oral_mg || 0);
+                    }
+                }
+                
+                totalOME += omeValue;
+            }
+            
+            return Math.round(totalOME * 10) / 10; // Round to 1 decimal place
+        }
+
+        function processCSV() {
+            const fileInput = document.getElementById('csvFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showStatus('Please select a CSV file', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const text = e.target.result;
+                    const rows = parseCSVText(text);
+                    
+                    if (rows.length < 2) {
+                        showStatus('CSV file appears to be empty', 'error');
+                        return;
+                    }
+                    
+                    // Find column indices
+                    const headers = rows[0];
+                    const columnIndices = {
+                        urn: findColumnIndex(headers, 'Patient URN'),
+                        preop: findColumnIndex(headers, 'Opioids pre-op - type of opioid and dose'),
+                        intraop24: findColumnIndex(headers, 'Total opioids (intraop-24h post-op)'),
+                        post2448: findColumnIndex(headers, 'Total opioid (24-48h post-op)'),
+                        post4872: findColumnIndex(headers, 'Total opioid (48-72 post-op)')
+                    };
+                    
+                    // Check if all required columns are found
+                    for (let key in columnIndices) {
+                        if (columnIndices[key] === -1) {
+                            showStatus(`Required column not found: ${key}`, 'error');
+                            return;
+                        }
+                    }
+                    
+                    showStatus(`Processing ${rows.length - 1} patient records...`, 'info');
+                    
+                    // Process data
+                    const outputData = [['Patient URN', 'Opioids pre-op - type of opioid and dose', 'Total opioids (intraop-24h post-op)', 'Total opioid (24-48h post-op)', 'Total opioid (48-72 post-op)']];
+                    
+                    let processedCount = 0;
+                    for (let i = 1; i < rows.length; i++) {
+                        const row = rows[i];
+                        if (row.length < headers.length) continue; // Skip incomplete rows
+                        
+                        const urn = row[columnIndices.urn];
+                        
+                        // Skip rows without patient URN
+                        if (!urn || urn.trim() === '') continue;
+                        
+                        const preopOME = parseOpioidData(row[columnIndices.preop]);
+                        const intraop24OME = parseOpioidData(row[columnIndices.intraop24]);
+                        const post2448OME = parseOpioidData(row[columnIndices.post2448]);
+                        const post4872OME = parseOpioidData(row[columnIndices.post4872]);
+                        
+                        outputData.push([urn, preopOME, intraop24OME, post2448OME, post4872OME]);
+                        processedCount++;
+                    }
+                    
+                    // Generate CSV
+                    const csvContent = generateCSV(outputData);
+                    
+                    // Create download link
+                    const blob = new Blob([csvContent], { type: 'text/csv' });
+                    const url = URL.createObjectURL(blob);
+                    const downloadLink = document.getElementById('downloadBtn');
+                    downloadLink.href = url;
+                    document.getElementById('download-link').style.display = 'block';
+                    
+                    // Show preview
+                    showPreview(outputData, processedCount);
+                    
+                    showStatus(`Successfully processed ${processedCount} patients`, 'success');
+                    
+                } catch (error) {
+                    showStatus('Error processing CSV: ' + error.message, 'error');
+                    console.error(error);
+                }
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        function parseCSVText(text) {
+            const rows = [];
+            const lines = text.split(/\r?\n/);
+            
+            for (let line of lines) {
+                if (line.trim() === '') continue;
+                
+                const row = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        row.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                
+                row.push(current.trim());
+                rows.push(row);
+            }
+            
+            return rows;
+        }
+        
+        function findColumnIndex(headers, columnName) {
+            for (let i = 0; i < headers.length; i++) {
+                if (headers[i].trim().toLowerCase() === columnName.toLowerCase()) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+        
+        function generateCSV(data) {
+            return data.map(row => row.map(cell => {
+                // Escape quotes and wrap in quotes if necessary
+                const cellStr = String(cell);
+                if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+                    return '"' + cellStr.replace(/"/g, '""') + '"';
+                }
+                return cellStr;
+            }).join(',')).join('\n');
+        }
+        
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = type;
+        }
+        
+        function showPreview(data, processedCount) {
+            const previewDiv = document.getElementById('preview');
+            
+            if (data.length > 1) {
+                // Show only first 10 rows for preview
+                const previewData = data.slice(0, Math.min(11, data.length));
+                
+                let html = '<div style="margin-top: 30px; padding: 20px; background-color: #f8f9fa; border-radius: 8px;">';
+                html += data.length > 11 ? '<h3>Preview (first 10 rows):</h3>' : '<h3>Preview:</h3>';
+                html += '<div style="overflow-x: auto;">';
+                html += '<table>';
+                html += '<thead>';
+                
+                // Headers
+                html += '<tr>';
+                for (let header of previewData[0]) {
+                    html += `<th style="background-color: #34495e; color: white; padding: 10px; text-align: left;">${header}</th>`;
+                }
+                html += '</tr>';
+                html += '</thead>';
+                html += '<tbody>';
+                
+                // Data rows
+                for (let i = 1; i < previewData.length; i++) {
+                    html += '<tr>';
+                    for (let cell of previewData[i]) {
+                        html += `<td style="padding: 10px; border-bottom: 1px solid #dee2e6;">${cell}</td>`;
+                    }
+                    html += '</tr>';
+                }
+                
+                html += '</tbody>';
+                html += '</table>';
+                html += '</div>';
+                html += `<p style="margin-top: 15px; color: #666;"><em>Total rows processed: ${processedCount}</em></p>`;
+                html += '</div>';
+                
+                previewDiv.innerHTML = html;
+            }
+        }
+        function testCalculation() {
+            const input = document.getElementById('testInput').value;
+            const result = parseOpioidData(input);
+            document.getElementById('testResult').innerHTML = `<strong>Result:</strong> ${result} mg OME`;
+        }
+        
+        function runUnitTests() {
+            const testCases = [
+                // Known examples
+                { input: "fentanyl 90mcg IV, intrathecal morphine 100mcg, endone 5mg", expected: 25.8 },
+                { input: "intrathecal fentanyl 15mcg, intrathecal morphine 100mcg, endone 5mg", expected: 10.8 },
+                { input: "5mg endone", expected: 7.5 },
+                
+                // Basic conversions
+                { input: "morphine 10mg", expected: 10 },
+                { input: "oxycodone 10mg", expected: 15 },
+                { input: "morphine 10mg BD", expected: 20 },
+                { input: "oxycodone 5mg TDS", expected: 22.5 },
+                
+                // Parenteral routes
+                { input: "morphine 10mg IV", expected: 30 },
+                { input: "oxycodone 10mg IV", expected: 30 },
+                { input: "fentanyl 100mcg IV", expected: 20 },
+                
+                // Mixed routes
+                { input: "morphine 20mg oral, fentanyl 50mcg IV", expected: 30 },
+                
+                // Nil cases
+                { input: "nil", expected: 0 },
+                { input: "none", expected: 0 },
+                { input: "", expected: 0 },
+                
+                // Synonym tests
+                { input: "endone 10mg", expected: 15 },
+                { input: "targin 10mg", expected: 15 },
+                { input: "MS Contin 30mg", expected: 30 },
+                
+                // Patch tests
+                { input: "fentanyl 25mcg/hr patch", expected: 75 }, // 25 * 3
+                { input: "buprenorphine 5mcg/hr patch", expected: 10 }, // 5 * 2
+                
+                // Complex formatting
+                { input: "Morphine 10mg + Oxycodone 5mg", expected: 17.5 },
+                { input: "morphine 10mg and oxycodone 5mg", expected: 17.5 }
+            ];
+            
+            let failedTests = [];
+            let passedCount = 0;
+            
+            for (let test of testCases) {
+                const result = parseOpioidData(test.input);
+                const passed = Math.abs(result - test.expected) < 0.1; // Allow small rounding differences
+                
+                if (passed) {
+                    passedCount++;
+                } else {
+                    failedTests.push({
+                        input: test.input,
+                        expected: test.expected,
+                        actual: result
+                    });
+                }
+            }
+            
+            const resultsDiv = document.getElementById('unitTestResults');
+            
+            if (failedTests.length === 0) {
+                resultsDiv.innerHTML = `<div class="unit-test-status test-pass">✓ All ${testCases.length} tests passed!</div>`;
+            } else {
+                let html = `<div class="unit-test-status test-pass">✓ ${passedCount} tests passed</div> `;
+                html += `<div class="unit-test-status test-fail">✗ ${failedTests.length} tests failed</div>`;
+                html += '<table style="margin-top: 10px; width: 100%; background: white;">';
+                html += '<tr><th style="text-align: left; padding: 8px;">Input</th><th style="padding: 8px;">Expected</th><th style="padding: 8px;">Actual</th></tr>';
+                
+                for (let failed of failedTests) {
+                    html += `<tr style="background-color: #ffe0e0;">`;
+                    html += `<td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 13px;">${failed.input}</td>`;
+                    html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${failed.expected}</td>`;
+                    html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center; color: red; font-weight: 600;">${failed.actual}</td>`;
+                    html += '</tr>';
+                }
+                
+                html += '</table>';
+                resultsDiv.innerHTML = html;
+            }
+        }
+        
+        // Run unit tests on page load
+        window.onload = function() {
+            runUnitTests();
+        };
+    </script>
+</body>
+</html>
