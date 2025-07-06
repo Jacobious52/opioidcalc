@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opioid Conversion Calculator</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-calculator me-2"></i>Opioid Conversion Calculator
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item me-2">
+                        <button id="exportCsvBtn" class="btn btn-sm btn-outline-light">
+                            <i class="fas fa-file-csv"></i> Export CSV
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#infoModal">
+                            <i class="fas fa-info-circle"></i> About
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mb-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-calculator me-2"></i>Opioid Conversion Calculator
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="conversionForm" class="needs-validation" novalidate>
+                            <!-- Current Opioids Section -->
+                            <div class="mb-4">
+                                <h5 class="mb-3">
+                                    <i class="fas fa-pills me-2"></i>Current Opioid Medications
+                                </h5>
+                                <div id="opioidRowsContainer">
+                                    <!-- Opioid rows will be added here -->
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addOpioidBtn">
+                                    <i class="fas fa-plus"></i> Add Another Opioid
+                                </button>
+                            </div>
+
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <button type="reset" class="btn btn-outline-secondary me-md-2">
+                                    <i class="fas fa-undo me-1"></i> Reset
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-light py-4 mt-5">
+        <div class="container text-center">
+            <p class="mb-0 text-muted">
+                &copy; 2023 Opioid Conversion Calculator. For healthcare professionals only.
+            </p>
+            <p class="small text-muted">
+                This tool is for informational purposes only and should not replace clinical judgment.
+            </p>
+        </div>
+    </footer>
+
+    <!-- Info Modal -->
+    <div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="infoModalLabel">About Opioid Conversion Calculator</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>Purpose</h6>
+                    <p>This tool helps healthcare professionals convert between different opioid medications while maintaining equianalgesic dosing.</p>
+                    
+                    <h6>How to Use</h6>
+                    <ol>
+                        <li>Enter all current opioid medications with their doses and frequencies</li>
+                        <li>Select the target opioid and route</li>
+                        <li>Indicate if this is a switch between opioids</li>
+                        <li>Select any relevant patient factors</li>
+                        <li>Click "Calculate Conversion" to see the results</li>
+                    </ol>
+                    
+                    <h6>Important Notes</h6>
+                    <ul>
+                        <li>Always reassess pain control and adverse effects after conversion</li>
+                        <li>Consider individual patient factors (renal/hepatic function, comorbidities)</li>
+                        <li>Monitor for signs of withdrawal or overdose, especially with methadone or fentanyl</li>
+                        <li>Consider breakthrough pain medication at 10-20% of the total daily dose</li>
+                    </ul>
+                    
+                    <h6>Disclaimer</h6>
+                    <p>This tool is provided for informational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Opioid Row Template (for cloning) -->
+    <template id="opioidRowTemplate">
+        <div class="opioid-row mb-3 p-3 border rounded">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Opioid</label>
+                    <select class="form-select opioid-drug" required></select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Dose</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control opioid-dose" step="0.1" min="0.1" required>
+                        <select class="form-select opioid-unit" style="flex: 0 0 85px;">
+                            <option value="mg" selected>mg</option>
+                            <option value="mcg">mcg</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Route</label>
+                    <select class="form-select opioid-route" required></select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Frequency</label>
+                    <input type="text" class="form-control opioid-frequency" list="frequenciesDataList" required value="1/d">
+                    <datalist id="frequenciesDataList"></datalist>
+                </div>
+                <div class="col-md-2 text-end">
+                    <button type="button" class="btn btn-outline-secondary btn-sm me-1 advanced-toggle" data-bs-toggle="collapse">Advanced</button>
+                    <button type="button" class="btn btn-outline-danger btn-sm remove-opioid-btn"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+            <div class="collapse mt-3 advanced-section">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">To Opioid</label>
+                        <select class="form-select target-opioid"></select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">To Route</label>
+                        <select class="form-select target-route"></select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Switching Opioid?</label>
+                        <select class="form-select switching-select">
+                            <option value="false" selected>No</option>
+                            <option value="true">Yes</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Patient Concerns</label>
+                        <select class="form-select patient-factor-select"></select>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3">
+                <span class="result-text fw-bold"></span>
+            </div>
+        </div>
+    </template>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="assets/script.js"></script>
+</body>
+</html>
