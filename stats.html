@@ -437,9 +437,10 @@
                     <div id="blockTypeChart" class="plotly-chart"></div>
                     <div style="background-color: #f8f9fa; padding: 15px; margin-top: 15px; border-radius: 5px; border-left: 3px solid #6c757d;">
                         <h4 style="margin-top: 0; color: #495057;">How to Interpret:</h4>
-                        <p><strong>What it shows:</strong> Opioid consumption patterns across different anaesthetic techniques (spinal, intrathecal morphine, regional blocks).</p>
-                        <p><strong>Key insights:</strong> Which anaesthetic approaches provide better pain control. Intrathecal morphine should reduce post-op requirements significantly.</p>
-                        <p><strong>Clinical relevance:</strong> Optimize anaesthetic protocols. Consider block type when predicting post-operative opioid needs and staffing requirements.</p>
+                        <p><strong>What it shows:</strong> Opioid consumption patterns across different anaesthetic techniques with statistical analysis comparing key block types (spinal vs regional, intrathecal effectiveness).</p>
+                        <p><strong>Statistical Analysis:</strong> Mann-Whitney U tests and Cohen's d effect sizes compare: Spinal Only vs Regional Only, Spinal+Intrathecal vs Spinal Only, and No Blocks vs Spinal Only.</p>
+                        <p><strong>Key insights:</strong> Green annotations indicate statistically significant reductions in opioid consumption (beneficial), red indicates increases. Effect sizes show clinical significance: small (d=0.2-0.5), medium (d=0.5-0.8), large (d>0.8).</p>
+                        <p><strong>Clinical relevance:</strong> Use statistical significance and effect sizes to guide evidence-based anaesthetic protocol selection. Large effect sizes with statistical significance indicate clinically meaningful differences for protocol optimization.</p>
                     </div>
                 </div>
                 <div class="chart-container">
@@ -478,6 +479,17 @@
                         <p><strong>Key insights:</strong> Economic impact of opioid tolerance. Higher consumption may correlate with longer stays or higher rehab rates.</p>
                         <p><strong>Clinical relevance:</strong> Resource planning and discharge planning protocols. Consider tolerance status when estimating length of stay.</p>
                     </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h3>Anaesthetic Block Usage: Hip vs Knee Procedures</h3>
+                <div id="procedureBlockChart" class="plotly-chart"></div>
+                <div style="background-color: #f8f9fa; padding: 15px; margin-top: 15px; border-radius: 5px; border-left: 3px solid #6c757d;">
+                    <h4 style="margin-top: 0; color: #495057;">How to Interpret:</h4>
+                    <p><strong>What it shows:</strong> Comparison of anaesthetic block techniques between total hip and total knee replacement procedures, showing effectiveness and opioid consumption patterns.</p>
+                    <p><strong>Key insights:</strong> Different procedures may benefit from different block strategies. Regional blocks may be more effective for specific anatomical approaches.</p>
+                    <p><strong>Clinical relevance:</strong> Procedure-specific anaesthetic protocols. Optimize block selection based on surgical approach and anatomy-specific pain patterns.</p>
                 </div>
             </div>
 
@@ -829,6 +841,7 @@
             createAntiInflammatoryChart(processedData);
             createPainScoreChart(tolerantPatients, naivePatients);
             createDischargeChart(tolerantPatients, naivePatients);
+            createProcedureBlockChart(processedData);
             
             // Update summary table
             updateSummaryTable(tolerantPatients, naivePatients);
@@ -884,6 +897,7 @@
                         createAntiInflammatoryChart(window.embeddedData);
                         createPainScoreChart(tolerantPatients, naivePatients);
                         createDischargeChart(tolerantPatients, naivePatients);
+                        createProcedureBlockChart(window.embeddedData);
                         
                         updateSummaryTable(tolerantPatients, naivePatients);
                         updateSubAnalysisSummary(window.embeddedData, tolerantPatients, naivePatients);
@@ -1961,8 +1975,86 @@
             const blockNames = Object.keys(blockGroups).filter(name => blockGroups[name].length > 0);
             const blockMeans = blockNames.map(name => {
                 const stats = calculateStats(blockGroups[name], 'totalOME');
-                return { name, mean: stats.mean, n: stats.n };
+                return { name, mean: stats.mean, n: stats.n, stats: stats, patients: blockGroups[name] };
             });
+            
+            // Statistical comparisons between key block types
+            const statisticalComparisons = [];
+            
+            // Compare Spinal Only vs Regional Only (core spinal vs regional comparison)
+            const spinalOnly = blockMeans.find(b => b.name === 'Spinal Only');
+            const regionalOnly = blockMeans.find(b => b.name === 'Regional Only');
+            
+            if (spinalOnly && regionalOnly && spinalOnly.n > 0 && regionalOnly.n > 0) {
+                const mannWhitney = calculateMannWhitneyU(
+                    spinalOnly.stats.values, 
+                    regionalOnly.stats.values
+                );
+                const cohenD = calculateCohenD(
+                    spinalOnly.stats.values, 
+                    regionalOnly.stats.values
+                );
+                statisticalComparisons.push({
+                    comparison: 'Spinal Only vs Regional Only',
+                    group1: 'Spinal Only',
+                    group2: 'Regional Only',
+                    p: mannWhitney.p,
+                    cohenD: cohenD,
+                    mean1: spinalOnly.mean,
+                    mean2: regionalOnly.mean,
+                    significant: mannWhitney.p < 0.05,
+                    effectSize: interpretCohenD(Math.abs(cohenD))
+                });
+            }
+            
+            // Compare Spinal + Intrathecal vs Spinal Only (intrathecal effectiveness)
+            const spinalIntrathecal = blockMeans.find(b => b.name === 'Spinal + Intrathecal');
+            
+            if (spinalIntrathecal && spinalOnly && spinalIntrathecal.n > 0 && spinalOnly.n > 0) {
+                const mannWhitney = calculateMannWhitneyU(
+                    spinalIntrathecal.stats.values, 
+                    spinalOnly.stats.values
+                );
+                const cohenD = calculateCohenD(
+                    spinalIntrathecal.stats.values, 
+                    spinalOnly.stats.values
+                );
+                statisticalComparisons.push({
+                    comparison: 'Spinal+IT vs Spinal Only',
+                    group1: 'Spinal + Intrathecal',
+                    group2: 'Spinal Only',
+                    p: mannWhitney.p,
+                    cohenD: cohenD,
+                    mean1: spinalIntrathecal.mean,
+                    mean2: spinalOnly.mean,
+                    significant: mannWhitney.p < 0.05,
+                    effectSize: interpretCohenD(Math.abs(cohenD))
+                });
+            }
+            
+            // Compare No Blocks vs any block technique
+            const noBlocks = blockMeans.find(b => b.name === 'No Blocks');
+            if (noBlocks && spinalOnly && noBlocks.n > 0 && spinalOnly.n > 0) {
+                const mannWhitney = calculateMannWhitneyU(
+                    noBlocks.stats.values, 
+                    spinalOnly.stats.values
+                );
+                const cohenD = calculateCohenD(
+                    noBlocks.stats.values, 
+                    spinalOnly.stats.values
+                );
+                statisticalComparisons.push({
+                    comparison: 'No Blocks vs Spinal Only',
+                    group1: 'No Blocks',
+                    group2: 'Spinal Only',
+                    p: mannWhitney.p,
+                    cohenD: cohenD,
+                    mean1: noBlocks.mean,
+                    mean2: spinalOnly.mean,
+                    significant: mannWhitney.p < 0.05,
+                    effectSize: interpretCohenD(Math.abs(cohenD))
+                });
+            }
             
             const trace = {
                 x: blockMeans.map(b => `${b.name}<br>(n=${b.n})`),
@@ -1984,11 +2076,98 @@
                 xaxis: { title: 'Anaesthetic Block Type' },
                 yaxis: { title: 'Mean Total 72-hour OME (mg)' },
                 showlegend: false,
-                margin: { t: 40, b: 120, l: 60, r: 40 },
-                font: { family: 'Arial, sans-serif', size: 12 }
+                margin: { t: 80, b: 120, l: 60, r: 300 },
+                font: { family: 'Arial, sans-serif', size: 12 },
+                annotations: []
             };
+            
+            // Add individual statistical significance annotations on the right side
+            const significantComparisons = statisticalComparisons.filter(c => c.significant);
+            let currentY = 0.9;
+            
+            significantComparisons.forEach((comp, i) => {
+                layout.annotations.push({
+                    x: 1.02,
+                    y: currentY - (i * 0.15),
+                    xref: 'paper',
+                    yref: 'paper',
+                    text: `<b>${comp.comparison}:</b><br>p=${comp.p < 0.001 ? '<0.001' : comp.p.toFixed(3)}*<br>Cohen's d=${comp.cohenD.toFixed(2)}<br>(${comp.effectSize} effect)`,
+                    showarrow: false,
+                    align: 'left',
+                    bgcolor: comp.mean1 < comp.mean2 ? 'rgba(39,174,96,0.1)' : 'rgba(231,76,60,0.1)',
+                    bordercolor: comp.mean1 < comp.mean2 ? '#27ae60' : '#e74c3c',
+                    borderwidth: 1,
+                    font: { size: 9, color: comp.mean1 < comp.mean2 ? '#27ae60' : '#e74c3c' }
+                });
+            });
+            
+            // Add summary annotation at the top, only if there are results
+            const totalComparisons = statisticalComparisons.length;
+            
+            if (totalComparisons > 0) {
+                layout.annotations.push({
+                    x: 0.5,
+                    y: 1.05,
+                    xref: 'paper',
+                    yref: 'paper',
+                    text: `<b>Statistical Analysis:</b> ${significantComparisons.length}/${totalComparisons} comparisons show significant differences (p<0.05)`,
+                    showarrow: false,
+                    align: 'center',
+                    bgcolor: 'rgba(232,244,248,0.9)',
+                    bordercolor: '#3498db',
+                    borderwidth: 1,
+                    font: { size: 10, color: '#2980b9' }
+                });
+            }
 
             Plotly.newPlot('blockTypeChart', [trace], layout, {responsive: true});
+            
+            // Update interpretation with statistical results
+            updateBlockTypeInterpretation(statisticalComparisons);
+        }
+
+        function updateBlockTypeInterpretation(statisticalComparisons) {
+            const interpretationDiv = document.querySelector('#blockTypeChart').parentElement.nextElementSibling;
+            if (!interpretationDiv) return;
+            
+            const significantComparisons = statisticalComparisons.filter(c => c.significant);
+            const totalComparisons = statisticalComparisons.length;
+            
+            let statisticalText = '';
+            if (totalComparisons > 0) {
+                statisticalText = `<p><strong>Statistical Results:</strong> ${significantComparisons.length} of ${totalComparisons} comparisons showed statistically significant differences (p<0.05):</p><ul>`;
+                
+                statisticalComparisons.forEach(comp => {
+                    const pValue = comp.p < 0.001 ? '<0.001' : comp.p.toFixed(3);
+                    const effectInterpretation = comp.mean1 < comp.mean2 ? 'reduction' : 'increase';
+                    const color = comp.significant ? (comp.mean1 < comp.mean2 ? 'green' : 'red') : 'gray';
+                    const significance = comp.significant ? '(statistically significant)' : '(not significant)';
+                    
+                    statisticalText += `<li><strong>${comp.comparison}:</strong> ` +
+                        `<span style="color: ${color}">p=${pValue} ${significance}</span>, ` +
+                        `Cohen's d=${comp.cohenD.toFixed(2)} (${comp.effectSize.toLowerCase()} effect size) - ` +
+                        `${comp.cohenD > 0 ? Math.abs((comp.mean2 - comp.mean1) / comp.mean1 * 100).toFixed(1) + '% ' + effectInterpretation : 'no meaningful difference'}</li>`;
+                });
+                
+                statisticalText += '</ul>';
+            }
+            
+            // Update the interpretation content
+            const currentContent = interpretationDiv.innerHTML;
+            const newContent = currentContent.replace(
+                /<p><strong>Statistical Analysis:<\/strong>.*?<\/p>/s,
+                statisticalText
+            );
+            
+            // If we didn't find existing statistical analysis, add it after the first paragraph
+            if (newContent === currentContent && statisticalText) {
+                const firstP = interpretationDiv.querySelector('p:first-of-type');
+                if (firstP) {
+                    firstP.insertAdjacentHTML('afterend', statisticalText);
+                }
+            } else {
+                interpretationDiv.innerHTML = newContent;
+            }
         }
 
         function createAntiInflammatoryChart(allPatients) {
@@ -2273,7 +2452,209 @@
                 `);
             }
             
+            // Procedure-specific block analysis
+            const hipPatients = allPatients.filter(p => p.procedure.toLowerCase().includes('hip'));
+            const kneePatients = allPatients.filter(p => p.procedure.toLowerCase().includes('knee'));
+            
+            if (hipPatients.length > 0 && kneePatients.length > 0) {
+                // Compare spinal + intrathecal effectiveness between procedures
+                const hipSpinalIntrathecal = hipPatients.filter(p => p.blockInfo.hasSpinal && p.blockInfo.hasIntrathecal);
+                const kneeSpinalIntrathecal = kneePatients.filter(p => p.blockInfo.hasSpinal && p.blockInfo.hasIntrathecal);
+                
+                if (hipSpinalIntrathecal.length > 0 && kneeSpinalIntrathecal.length > 0) {
+                    const hipSpinalStats = calculateStats(hipSpinalIntrathecal, 'totalOME');
+                    const kneeSpinalStats = calculateStats(kneeSpinalIntrathecal, 'totalOME');
+                    const procedureBlockTest = calculateMannWhitneyU(hipSpinalStats.values, kneeSpinalStats.values);
+                    
+                    rows.push(`
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 12px;"><strong>Procedure-Specific Block Effectiveness</strong></td>
+                            <td style="padding: 12px;">Hip spinal+IT: ${hipSpinalStats.mean.toFixed(1)} mg vs Knee spinal+IT: ${kneeSpinalStats.mean.toFixed(1)} mg</td>
+                            <td style="padding: 12px;">p = ${procedureBlockTest.p < 0.001 ? '<0.001' : procedureBlockTest.p.toFixed(3)}</td>
+                            <td style="padding: 12px;">${hipSpinalStats.mean < kneeSpinalStats.mean ? 
+                                'Hip procedures show better response to intrathecal morphine - consider procedure-specific protocols' : 
+                                hipSpinalStats.mean > kneeSpinalStats.mean ? 
+                                'Knee procedures show better response to intrathecal morphine - anatomical differences may affect block distribution' :
+                                'Similar block effectiveness across procedures'}</td>
+                        </tr>
+                    `);
+                }
+                
+                // Overall procedure comparison
+                const hipStats = calculateStats(hipPatients, 'totalOME');
+                const kneeStats = calculateStats(kneePatients, 'totalOME');
+                const procedureTest = calculateMannWhitneyU(hipStats.values, kneeStats.values);
+                
+                rows.push(`
+                    <tr style="border-bottom: 1px solid #ddd;">
+                        <td style="padding: 12px;"><strong>Hip vs Knee Opioid Requirements</strong></td>
+                        <td style="padding: 12px;">Hip: ${hipStats.mean.toFixed(1)} mg (n=${hipPatients.length}) vs Knee: ${kneeStats.mean.toFixed(1)} mg (n=${kneePatients.length})</td>
+                        <td style="padding: 12px;">p = ${procedureTest.p < 0.001 ? '<0.001' : procedureTest.p.toFixed(3)}</td>
+                        <td style="padding: 12px;">${procedureTest.p < 0.05 ? 
+                            (hipStats.mean > kneeStats.mean ? 
+                                'Hip replacements require significantly more opioids - consider enhanced multimodal analgesia' : 
+                                'Knee replacements require significantly more opioids - may reflect greater soft tissue trauma') :
+                            'Similar opioid requirements across procedures - tolerance status likely more important than procedure type'}</td>
+                    </tr>
+                `);
+            }
+            
             return rows.join('');
+        }
+
+        function createProcedureBlockChart(allPatients) {
+            // Categorize patients by procedure type
+            const hipPatients = allPatients.filter(p => p.procedure.toLowerCase().includes('hip'));
+            const kneePatients = allPatients.filter(p => p.procedure.toLowerCase().includes('knee'));
+            
+            // Define block categories (excluding Spinal + Intrathecal)
+            const blockCategories = [
+                {
+                    name: 'Spinal Only',
+                    filter: p => p.blockInfo.hasSpinal && !p.blockInfo.hasIntrathecal && !p.blockInfo.hasRegional
+                },
+                {
+                    name: 'Spinal + Regional',
+                    filter: p => p.blockInfo.hasSpinal && p.blockInfo.hasRegional && !p.blockInfo.hasIntrathecal
+                },
+                {
+                    name: 'Regional Only',
+                    filter: p => !p.blockInfo.hasSpinal && p.blockInfo.hasRegional
+                },
+                {
+                    name: 'No Blocks',
+                    filter: p => !p.blockInfo.hasSpinal && !p.blockInfo.hasIntrathecal && !p.blockInfo.hasRegional
+                },
+                {
+                    name: 'Combined (All)',
+                    filter: p => p.blockInfo.hasSpinal && p.blockInfo.hasIntrathecal && p.blockInfo.hasRegional
+                }
+            ];
+            
+            // Calculate block usage and opioid consumption for each procedure type
+            const hipData = blockCategories.map(category => {
+                const patients = hipPatients.filter(category.filter);
+                const stats = patients.length > 0 ? calculateStats(patients, 'totalOME') : { mean: 0, n: 0, sd: 0 };
+                return {
+                    category: category.name,
+                    patients: patients,
+                    stats: stats,
+                    percentage: hipPatients.length > 0 ? (patients.length / hipPatients.length) * 100 : 0
+                };
+            });
+            
+            const kneeData = blockCategories.map(category => {
+                const patients = kneePatients.filter(category.filter);
+                const stats = patients.length > 0 ? calculateStats(patients, 'totalOME') : { mean: 0, n: 0, sd: 0 };
+                return {
+                    category: category.name,
+                    patients: patients,
+                    stats: stats,
+                    percentage: kneePatients.length > 0 ? (patients.length / kneePatients.length) * 100 : 0
+                };
+            });
+            
+            // Filter out empty categories (where both hip and knee have 0 patients)
+            const validCategories = [];
+            const filteredHipData = [];
+            const filteredKneeData = [];
+            
+            for (let i = 0; i < blockCategories.length; i++) {
+                if (hipData[i].stats.n > 0 || kneeData[i].stats.n > 0) {
+                    validCategories.push(blockCategories[i].name);
+                    filteredHipData.push(hipData[i]);
+                    filteredKneeData.push(kneeData[i]);
+                }
+            }
+            
+            // Create traces for the grouped bar chart using filtered data
+            const hipTrace = {
+                x: filteredHipData.map(d => d.category),
+                y: filteredHipData.map(d => d.stats.mean),
+                name: `Hip (n=${hipPatients.length})`,
+                type: 'bar',
+                marker: { color: '#3498db' },
+                hovertemplate: '%{y:.1f} mg OME<br>%{text}<extra></extra>',
+                text: filteredHipData.map(d => `Hip: ${d.stats.n} patients (${d.percentage.toFixed(1)}%)<br>Mean: ${d.stats.mean.toFixed(1)} ± ${d.stats.sd.toFixed(1)} mg`)
+            };
+            
+            const kneeTrace = {
+                x: filteredKneeData.map(d => d.category),
+                y: filteredKneeData.map(d => d.stats.mean),
+                name: `Knee (n=${kneePatients.length})`,
+                type: 'bar',
+                marker: { color: '#e74c3c' },
+                hovertemplate: '%{y:.1f} mg OME<br>%{text}<extra></extra>',
+                text: filteredKneeData.map(d => `Knee: ${d.stats.n} patients (${d.percentage.toFixed(1)}%)<br>Mean: ${d.stats.mean.toFixed(1)} ± ${d.stats.sd.toFixed(1)} mg`)
+            };
+            
+            // Statistical comparisons between hip and knee for each filtered block type
+            const statisticalTests = [];
+            for (let i = 0; i < filteredHipData.length; i++) {
+                const hipPts = filteredHipData[i].patients;
+                const kneePts = filteredKneeData[i].patients;
+                
+                if (hipPts.length > 0 && kneePts.length > 0) {
+                    const test = calculateMannWhitneyU(
+                        hipPts.map(p => p.totalOME),
+                        kneePts.map(p => p.totalOME)
+                    );
+                    statisticalTests.push({
+                        category: filteredHipData[i].category,
+                        p: test.p,
+                        significant: test.p < 0.05,
+                        hipMean: filteredHipData[i].stats.mean,
+                        kneeMean: filteredKneeData[i].stats.mean,
+                        index: i
+                    });
+                }
+            }
+            
+            const layout = {
+                title: false,
+                xaxis: { title: 'Anaesthetic Block Type' },
+                yaxis: { title: 'Mean Total 72-hour OME (mg)' },
+                barmode: 'group',
+                showlegend: true,
+                legend: { x: 0, y: 1, bgcolor: 'rgba(255,255,255,0.8)' },
+                margin: { t: 60, b: 120, l: 60, r: 40 },
+                font: { family: 'Arial, sans-serif', size: 12 },
+                annotations: []
+            };
+            
+            // Add statistical significance annotations
+            statisticalTests.forEach((test) => {
+                if (test.significant) {
+                    layout.annotations.push({
+                        x: test.index,
+                        y: Math.max(test.hipMean, test.kneeMean) + 20,
+                        text: `p=${test.p < 0.001 ? '<0.001' : test.p.toFixed(3)}*`,
+                        showarrow: false,
+                        font: { color: '#e74c3c', size: 10, family: 'Arial Black' },
+                        bgcolor: 'rgba(255,255,255,0.8)',
+                        bordercolor: '#e74c3c',
+                        borderwidth: 1
+                    });
+                }
+            });
+            
+            // Add summary annotation
+            const significantDifferences = statisticalTests.filter(t => t.significant).length;
+            layout.annotations.push({
+                x: 0.5,
+                y: 1.05,
+                xref: 'paper',
+                yref: 'paper',
+                text: `<b>Block Effectiveness by Procedure:</b> ${significantDifferences}/${statisticalTests.length} block types show significant differences between hip and knee procedures`,
+                showarrow: false,
+                align: 'center',
+                bgcolor: 'rgba(232,244,248,0.9)',
+                bordercolor: '#3498db',
+                borderwidth: 1,
+                font: { size: 11, color: '#2980b9' }
+            });
+            
+            Plotly.newPlot('procedureBlockChart', [hipTrace, kneeTrace], layout, {responsive: true});
         }
 
         function updateBaselineCharacteristics(tolerant, naive) {
